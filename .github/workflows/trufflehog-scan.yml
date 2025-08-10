@@ -17,11 +17,11 @@ jobs:
 
       - name: Install TruffleHog
         run: |
-          pip install truffleHog
+          pip install trufflehog
 
       - name: Run TruffleHog scan
         run: |
-          trufflehog git file://$GITHUB_WORKSPACE --since-commit HEAD~20 --json > trufflehog-report.json
+          trufflehog git $GITHUB_WORKSPACE --since-commit HEAD~20 --json > trufflehog-report.json
           if [ -s trufflehog-report.json ]; then
             echo "⚠️ Secrets found!"
             cat trufflehog-report.json
