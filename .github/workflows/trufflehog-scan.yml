@@ -32,6 +32,8 @@ jobs:
       - name: Install TruffleHog
         run: |
           curl -sSL https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64 -o trufflehog
+          file trufflehog
+          head -5 trufflehog
           chmod +x trufflehog
           sudo mv trufflehog /usr/local/bin/
 
@@ -39,12 +41,8 @@ jobs:
       - name: Run TruffleHog scan
         run: |
           # Fichiers à exclure pour réduire les faux positifs
-          echo "node_modules" > exclude.txt
-          echo "target" >> exclude.txt
           echo "*.md" >> exclude.txt
-          echo "*.txt" >> exclude.txt
-          echo ".gitignore" >> exclude.txt
-
+          
           trufflehog git $GITHUB_WORKSPACE \
             --since-commit HEAD~20 \
             --exclude-paths exclude.txt \
