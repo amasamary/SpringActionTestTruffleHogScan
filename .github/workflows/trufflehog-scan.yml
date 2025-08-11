@@ -1,4 +1,4 @@
-name: TruffleHog Secret Scan
+name: Build and Secret Scan
 
 on:
   pull_request:
@@ -7,23 +7,60 @@ on:
     branches: [ master, develop ]
 
 jobs:
-  scan:
+  build:
     runs-on: ubuntu-latest
     steps:
+      # 1. Récupération du code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Nécessaire pour que TruffleHog analyse tout l'historique
+          fetch-depth: 0 # nécessaire pour scanner l'historique complet
 
+      # 2. Installation de Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      # 3. Compilation & tests du projet Spring Boot
+      - name: Build with Maven
+        run: mvn clean install -DskipTests=false
+
+      # 4. Installation de TruffleHog v3 (dernière version stable)
       - name: Install TruffleHog
         run: |
-          pip install trufflehog
+          curl -sSL https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64 -o trufflehog
+          chmod +x trufflehog
+          sudo mv trufflehog /usr/local/bin/
 
+      # 5. Scan du code et de l'historique Git
       - name: Run TruffleHog scan
         run: |
-          trufflehog git $GITHUB_WORKSPACE --since-commit HEAD~20 --json > trufflehog-report.json
+          # Fichiers à exclure pour réduire les faux positifs
+          echo "node_modules" > exclude.txt
+          echo "target" >> exclude.txt
+          echo "*.md" >> exclude.txt
+          echo "*.txt" >> exclude.txt
+          echo ".gitignore" >> exclude.txt
+
+          trufflehog git $GITHUB_WORKSPACE \
+            --since-commit HEAD~20 \
+            --exclude-paths exclude.txt \
+            --json > trufflehog-report.json
+
           if [ -s trufflehog-report.json ]; then
             echo "⚠️ Secrets found!"
             cat trufflehog-report.json
             exit 1
+          else
+            echo "✅ No secrets found."
           fi
+
+      # 6. Sauvegarde du rapport en artifact téléchargeable
+      - name: Upload scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trufflehog-report
+          path: trufflehog-report.json
