@@ -1,0 +1,31 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  trufflehog-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate shallow clone depth and branch
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "depth=$(($(jq length <<< '${{ toJson(github.event.commits) }}') + 2))" >> $GITHUB_ENV
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "depth=$((${{ github.event.pull_request.commits }} + 2))" >> $GITHUB_ENV
+            echo "branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout with shallow clone
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.branch }}
+          fetch-depth: ${{ env.depth }}
+
+      - name: Run TruffleHog scan
+        run: |
+          trufflehog git file://$GITHUB_WORKSPACE --json > trufflehog-report.json
