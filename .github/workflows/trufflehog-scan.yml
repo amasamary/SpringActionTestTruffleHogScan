@@ -17,11 +17,11 @@ jobs:
           fetch-depth: 0 # nécessaire pour scanner l'historique complet
 
       # 2. Installation de Java
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       # 3. Compilation & tests du projet Spring Boot
