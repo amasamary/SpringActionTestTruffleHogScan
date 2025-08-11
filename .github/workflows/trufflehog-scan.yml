@@ -17,7 +17,7 @@ jobs:
 
       - name: Install TruffleHog
         run: |
-          pip install trufflehog
+          pip install trufflehog --upgrade
 
       - name: Run TruffleHog scan
         run: |
